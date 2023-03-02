@@ -454,7 +454,7 @@ class MVXTwoStageDetector(Base3DDetector):
                                             self.pts_bbox_head.test_cfg)
         return merged_bboxes
 
-    def show_results(self, data, result, out_dir):
+    def show_results(self, data, result, out_dir, show=False, score_thr=None):
         """Results visualization.
 
         Args:
