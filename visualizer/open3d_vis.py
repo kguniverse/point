@@ -1,7 +1,6 @@
 import copy
 
 import numpy as np
-import torch
 
 try:
     import open3d as o3d
@@ -33,8 +32,6 @@ def _draw_points(points,
         tuple: points, color of each point.
     """
     vis.get_render_option().point_size = points_size  # set points size
-    if isinstance(points, torch.Tensor):
-        points = points.cpu().numpy()
 
     points = points.copy()
     pcd = geometry.PointCloud()
@@ -85,8 +82,8 @@ def _draw_bboxes(bbox3d,
         mode (str, optional):  indicate type of the input points,
             available mode ['xyz', 'xyzrgb']. Default: 'xyz'.
     """
-    if isinstance(bbox3d, torch.Tensor):
-        bbox3d = bbox3d.cpu().numpy()
+    # if isinstance(bbox3d, torch.Tensor):
+    #     bbox3d = bbox3d.cpu().numpy()
     bbox3d = bbox3d.copy()
 
     in_box_color = np.array(points_in_box_color)
@@ -220,10 +217,10 @@ def _draw_bboxes_ind(bbox3d,
         mode (str, optional):  indicate type of the input points,
             available mode ['xyz', 'xyzrgb']. Default: 'xyz'.
     """
-    if isinstance(bbox3d, torch.Tensor):
-        bbox3d = bbox3d.cpu().numpy()
-    if isinstance(indices, torch.Tensor):
-        indices = indices.cpu().numpy()
+    # if isinstance(bbox3d, torch.Tensor):
+    #     bbox3d = bbox3d.cpu().numpy()
+    # if isinstance(indices, torch.Tensor):
+    #     indices = indices.cpu().numpy()
     bbox3d = bbox3d.copy()
 
     in_box_color = np.array(points_in_box_color)

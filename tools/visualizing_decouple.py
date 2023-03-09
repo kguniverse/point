@@ -16,7 +16,7 @@ def draw(points,
                 0, 255, size=(pred_labels.max() + 1, 3)) / 256
             labelDict = {}
             for j in range(len(pred_labels)):
-                i = int(pred_labels[j].numpy())
+                i = int(pred_labels[j])
                 if labelDict.get(i) is None:
                     labelDict[i] = []
                 labelDict[i].append(pred_bboxes[j])
@@ -46,11 +46,11 @@ def main():
     for pkl_file in glob.glob(osp.join(result_dir, '*.pkl')):
         with open(pkl_file, 'rb') as f:
             data = pickle.load(f)
-        for i in range(len(data['points'])):
-            draw(data['points'][i], 
-                 data['gt_bboxes'][i], 
-                 data['pred_bboxes'][i], 
-                 data['pred_labels'][i])
+        for i in range(len(data)):
+            draw(data[i]['points'], 
+                 None,
+                 data[i]['pred_bboxes'], 
+                 data[i]['pred_labels'])
 
 
 if __name__ == '__main__':
