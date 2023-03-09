@@ -454,7 +454,7 @@ class MVXTwoStageDetector(Base3DDetector):
                                             self.pts_bbox_head.test_cfg)
         return merged_bboxes
 
-    def show_results(self, data, result, out_dir, show=False, score_thr=None):
+    def show_results(self, data, result, out_dir, show=False, score_thr=0.1):
         """Results visualization.
 
         Args:
@@ -462,6 +462,7 @@ class MVXTwoStageDetector(Base3DDetector):
             result (dict): Prediction results.
             out_dir (str): Output directory of visualization result.
         """
+        out_results = []
         for batch_id in range(len(result)):
             if isinstance(data['points'][0], DC):
                 points = data['points'][0]._data[0][batch_id].numpy()
@@ -485,7 +486,7 @@ class MVXTwoStageDetector(Base3DDetector):
             file_name = osp.split(pts_filename)[-1].split('.')[0]
 
             assert out_dir is not None, 'Expect out_dir, got none.'
-            inds = result[batch_id]['pts_bbox']['scores_3d'] > 0.1
+            inds = result[batch_id]['pts_bbox']['scores_3d'] > score_thr
             pred_bboxes = result[batch_id]['pts_bbox']['boxes_3d'][inds]
 
             # for now we convert points and bbox into depth mode
@@ -500,4 +501,9 @@ class MVXTwoStageDetector(Base3DDetector):
                     f'Unsupported box_mode_3d {box_mode_3d} for conversion!')
 
             pred_bboxes = pred_bboxes.tensor.cpu().numpy()
-            show_result(points, None, pred_bboxes, out_dir, file_name)
+            pred_scores = result[batch_id]['pts_bbox']['scores_3d'][inds].cpu().numpy()
+            pred_labels = result[batch_id]['pts_bbox']['labels_3d'][inds].cpu().numpy()
+            out_results.append(dict(points=points, pred_bboxes=pred_bboxes, pred_labels=pred_labels))
+            # show_result(points, None, pred_bboxes, out_dir, file_name)
+        # output dump
+        mmcv.dump(out_results, osp.join(out_dir, f'{file_name}_results.pkl'))
