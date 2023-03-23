@@ -471,11 +471,22 @@ class MVXTwoStageDetector(Base3DDetector):
             else:
                 ValueError(f"Unsupported data type {type(data['points'][0])} "
                            f'for visualization!')
+            
+            if isinstance(data['img'][0], DC):
+                imgs = data['img'][0]._data[0][batch_id].numpy()
+            elif mmcv.is_list_of(data['img'][0], torch.Tensor):
+                imgs = data['img'][0][batch_id]
+            else:
+                ValueError(f"Unsupported data type {type(data['img'][0])} "
+                           f'for visualization!')
+
             if isinstance(data['img_metas'][0], DC):
                 pts_filename = data['img_metas'][0]._data[0][batch_id][
                     'pts_filename']
                 box_mode_3d = data['img_metas'][0]._data[0][batch_id][
                     'box_mode_3d']
+                lidar2img = data['img_metas'][0]._data[0][batch_id][
+                    'lidar2img']
             elif mmcv.is_list_of(data['img_metas'][0], dict):
                 pts_filename = data['img_metas'][0][batch_id]['pts_filename']
                 box_mode_3d = data['img_metas'][0][batch_id]['box_mode_3d']
@@ -488,7 +499,7 @@ class MVXTwoStageDetector(Base3DDetector):
             assert out_dir is not None, 'Expect out_dir, got none.'
             inds = result[batch_id]['pts_bbox']['scores_3d'] > score_thr
             pred_bboxes = result[batch_id]['pts_bbox']['boxes_3d'][inds]
-
+            pred_bboxes_copy = pred_bboxes.clone()
             # for now we convert points and bbox into depth mode
             if (box_mode_3d == Box3DMode.CAM) or (box_mode_3d
                                                   == Box3DMode.LIDAR):
@@ -503,7 +514,13 @@ class MVXTwoStageDetector(Base3DDetector):
             pred_bboxes = pred_bboxes.tensor.cpu().numpy()
             pred_scores = result[batch_id]['pts_bbox']['scores_3d'][inds].cpu().numpy()
             pred_labels = result[batch_id]['pts_bbox']['labels_3d'][inds].cpu().numpy()
-            out_results.append(dict(points=points, pred_bboxes=pred_bboxes, pred_labels=pred_labels))
+            out_results.append(dict(points=points, 
+                                    pred_bboxes=pred_bboxes, 
+                                    pred_labels=pred_labels,
+                                    pred_bboxes_mmdet3d=pred_bboxes_copy,
+                                    lidar2img=lidar2img,
+                                    imgs=imgs,
+                                    img_shape=data['img_metas'][0]._data[0][batch_id]['img_shape']))
             # show_result(points, None, pred_bboxes, out_dir, file_name)
         # output dump
         mmcv.dump(out_results, osp.join(out_dir, f'{file_name}_results.pkl'))

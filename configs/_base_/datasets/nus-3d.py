@@ -12,7 +12,7 @@ data_root = 'data/nuscenes/'
 # format which requires the information in input_modality.
 input_modality = dict(
     use_lidar=True,
-    use_camera=False,
+    use_camera=True,
     use_radar=False,
     use_map=False,
     use_external=False)
@@ -59,6 +59,9 @@ test_pipeline = [
         use_dim=5,
         file_client_args=file_client_args),
     dict(
+        type='LoadMultiViewImageFromFiles',
+    ),
+    dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         file_client_args=file_client_args),
@@ -80,7 +83,7 @@ test_pipeline = [
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
                 with_label=False),
-            dict(type='Collect3D', keys=['points'])
+            dict(type='Collect3D', keys=['img', 'points'])
         ])
 ]
 # construct a pipeline for data and gt loading in show function

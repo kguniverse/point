@@ -4,6 +4,9 @@ import os
 import numpy as np
 import trimesh
 
+from .image_vis import *
+import mmcv
+
 
 def _write_obj(points, out_filename):
     """Write points into ``obj`` format for meshlab visualization.
@@ -216,3 +219,75 @@ def show_seg_result(points,
     if pred_seg is not None:
         _write_obj(pred_seg_color, osp.join(result_path,
                                             f'{filename}_pred.obj'))
+def show_multi_modality_result(img,
+                               gt_bboxes,
+                               pred_bboxes,
+                               proj_mat,
+                               out_dir,
+                               filename,
+                               box_mode='lidar',
+                               img_metas=None,
+                               show=False,
+                               gt_bbox_color=(61, 102, 255),
+                               pred_bbox_color=(241, 101, 72)):
+    """Convert multi-modality detection results into 2D results.
+
+    Project the predicted 3D bbox to 2D image plane and visualize them.
+
+    Args:
+        img (np.ndarray): The numpy array of image in cv2 fashion.
+        gt_bboxes (:obj:`BaseInstance3DBoxes`): Ground truth boxes.
+        pred_bboxes (:obj:`BaseInstance3DBoxes`): Predicted boxes.
+        proj_mat (numpy.array, shape=[4, 4]): The projection matrix
+            according to the camera intrinsic parameters.
+        out_dir (str): Path of output directory.
+        filename (str): Filename of the current frame.
+        box_mode (str, optional): Coordinate system the boxes are in.
+            Should be one of 'depth', 'lidar' and 'camera'.
+            Defaults to 'lidar'.
+        img_metas (dict, optional): Used in projecting depth bbox.
+            Defaults to None.
+        show (bool, optional): Visualize the results online. Defaults to False.
+        gt_bbox_color (str or tuple(int), optional): Color of bbox lines.
+           The tuple of color should be in BGR order. Default: (255, 102, 61).
+        pred_bbox_color (str or tuple(int), optional): Color of bbox lines.
+           The tuple of color should be in BGR order. Default: (72, 101, 241).
+    """
+    if box_mode == 'depth':
+        draw_bbox = draw_depth_bbox3d_on_img
+    elif box_mode == 'lidar':
+        draw_bbox = draw_lidar_bbox3d_on_img
+    elif box_mode == 'camera':
+        draw_bbox = draw_camera_bbox3d_on_img
+    else:
+        raise NotImplementedError(f'unsupported box mode {box_mode}')
+
+    result_path = osp.join(out_dir, filename)
+    mmcv.mkdir_or_exist(result_path)
+
+    if show:
+        show_img = img.copy()
+        if gt_bboxes is not None:
+            show_img = draw_bbox(
+                gt_bboxes, show_img, proj_mat, img_metas, color=gt_bbox_color)
+        if pred_bboxes is not None:
+            show_img = draw_bbox(
+                pred_bboxes,
+                show_img,
+                proj_mat,
+                img_metas,
+                color=pred_bbox_color)
+        mmcv.imshow(show_img, win_name='project_bbox3d_img', wait_time=0)
+
+    if img is not None:
+        mmcv.imwrite(img, osp.join(result_path, f'{filename}_img.png'))
+
+    if gt_bboxes is not None:
+        gt_img = draw_bbox(
+            gt_bboxes, img, proj_mat, img_metas, color=gt_bbox_color)
+        mmcv.imwrite(gt_img, osp.join(result_path, f'{filename}_gt.png'))
+
+    if pred_bboxes is not None:
+        pred_img = draw_bbox(
+            pred_bboxes, img, proj_mat, img_metas, color=pred_bbox_color)
+        mmcv.imwrite(pred_img, osp.join(result_path, f'{filename}_pred.png'))
