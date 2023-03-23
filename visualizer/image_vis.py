@@ -120,6 +120,16 @@ def draw_lidar_bbox3d_on_img(bboxes3d,
     pts_2d[:, 1] /= pts_2d[:, 2]
     imgfov_pts_2d = pts_2d[..., :2].reshape(num_bbox, 8, 2)
 
+    filter_inds = ((imgfov_pts_2d[:, :, 0] < img.shape[2])
+                     & (imgfov_pts_2d[:, :, 0] >= 0)
+                        & (imgfov_pts_2d[:, :, 1] < img.shape[1])
+                        & (imgfov_pts_2d[:, :, 1] >= 0))
+    filter_inds = filter_inds.all(axis=-1)
+    imgfov_pts_2d = imgfov_pts_2d[filter_inds]
+    num_bbox = imgfov_pts_2d.shape[0]
+
+    img = img.transpose(1, 2, 0)
+    img = np.ascontiguousarray(img)
     return plot_rect3d_on_img(img, num_bbox, imgfov_pts_2d, color, thickness)
 
 

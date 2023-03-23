@@ -1,4 +1,5 @@
 from visualizer import Visualizer, draw_lidar_bbox3d_on_img
+# from visualizer import draw_lidar_bbox3d_on_img
 import numpy as np
 from os import path as osp
 import argparse
@@ -33,16 +34,25 @@ def draw(points,
     vis.show()
 
 def draw_multi_modality(imgs, lidar2img, pred_bboxes_mmdet3d, filename, img_shape):
+    # breakpoint()
     pred_bbox_color=(241, 101, 72)
     draw_bbox = draw_lidar_bbox3d_on_img
     canvas = np.zeros((img_shape[0] * 2, img_shape[1] * 3, 3), dtype=np.uint8)
+    pred_imgs = []
     for i in range(len(imgs)):
         img = imgs[i]
+        mono_lidar2img = lidar2img[i]
         pred_img = draw_bbox(
-            pred_bboxes_mmdet3d, img, lidar2img, None, color=pred_bbox_color)
-        mmcv.imwrite(pred_img, osp.join('work_dirs/vis_result', f'{filename}_pred_{i}.png'))
+            pred_bboxes_mmdet3d, img, mono_lidar2img, None, color=pred_bbox_color)
+        pred_imgs.append(pred_img)
+        # mmcv.imwrite(pred_img, osp.join('work_dirs/vis_result', f'{filename}_pred_{i}.png'))
         # canvas[img_shape[0] * (i // 3):img_shape[0] * (i // 3 + 1), img_shape[1] * (i % 3):img_shape[1] * (i % 3 + 1), :] = pred_img
     #TODO: rearrange the canvas
+    pred_imgs = np.array(pred_imgs)
+    canvas_up = np.concatenate(pred_imgs[[2, 0, 1]], axis=1)
+    canvas_down = np.concatenate(pred_imgs[[5, 3, 4]], axis=1)
+    canvas = np.concatenate([canvas_up, canvas_down], axis=0)
+    mmcv.imwrite(canvas, osp.join('work_dirs/vis_result', f'{filename}_pred.png'))
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -60,14 +70,15 @@ def main():
         with open(pkl_file, 'rb') as f:
             data = pickle.load(f)
         for i in range(len(data)):
-            draw(data[i]['points'], 
-                 None,
-                 data[i]['pred_bboxes'], 
-                 data[i]['pred_labels'])
+            # draw(data[i]['points'], 
+            #      None,
+            #      data[i]['pred_bboxes'], 
+            #      data[i]['pred_labels'])
             draw_multi_modality(data[i]['imgs'],
                                 data[i]['lidar2img'],
                                 data[i]['pred_bboxes_mmdet3d'],
-                                pkl_file)
+                                pkl_file,
+                                data[i]['img_shape'])
 
 
 if __name__ == '__main__':
